@@ -8,8 +8,7 @@ class TaskModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task_name = db.Column(db.String(250))
     description = db.Column(db.Text)
-    uuid = db.Column(db.Integer, db.ForeignKey('project.uuid'))
-    
+    uuid = db.Column(db.Integer, db.ForeignKey('project.uuid'), default=None)
 
     def __init__(self, task_name, description, uuid):
         self.task_name = task_name

@@ -27,7 +27,7 @@ api.add_resource(UserLogin, '/authentication')
 api.add_resource(Project, '/project/<string:name>')
 api.add_resource(ProjectShare, '/project/share')
 api.add_resource(ProjectList, '/projects/<int:id>')
-api.add_resource(Task, '/project/task')
+api.add_resource(Task, '/project/task/<int:id>')
 api.add_resource(TaskList, '/project/tasks')
 
 if __name__ == '__main__':

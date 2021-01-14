@@ -3,6 +3,7 @@ from flask_restful import Resource, reqparse
 from models.project import ProjectModel
 from models.user import UserModel
 from flask import jsonify
+from flask_jwt_extended import jwt_required
 
 
 class Project(Resource):
@@ -20,22 +21,33 @@ class Project(Resource):
                                required=True,
                                help="created_by_id is required")
 
+    @jwt_required
     def get(self, name):
         project = ProjectModel.find_by_name(name)
         if project:
             return project.json()
         return jsonify({"Message": "Project Not Found"})
 
+    @jwt_required
     def post(self, name):
+        project = ProjectModel.find_by_name(name)
+        if project:
+            return jsonify({
+                "Message":
+                "Project with this name alredy Exists. Provide Unique Name."
+            })
+
         data = Project.project_parse.parse_args()
         project = ProjectModel(data['name'], data['description'],
                                data['created_by_id'])
         project.save_to_db()
         return {"Message": "Project Created"}
 
+    @jwt_required
     def put(self):
         pass
 
+    @jwt_required
     def delete(self):
         pass
 
@@ -55,6 +67,7 @@ class ProjectShare(Resource):
                                     required=True,
                                     help="permission is required")
 
+    @jwt_required
     def put(self):
         data = ProjectShare.projectshare_parse.parse_args()
         project = ProjectModel.find_by_id(data['uuid'])
@@ -67,5 +80,11 @@ class ProjectShare(Resource):
 class ProjectList(Resource):
     def get(self, id):
         #remaining task -> join user & project
-        projects = [project.json() for project in ProjectModel.query.all()]
+        projects = [
+            project.json() for project in ProjectModel.query.filter_by(
+                created_by_id=id).all()
+        ]
+        if len(projects) == 0:
+            return jsonify(
+                {"Message": "You don't have any project created yet."})
         return jsonify({"Projects": projects})

@@ -52,7 +52,7 @@ class ProjectModel(db.Model):
             "created_by": self.created_by_id,
             "share_with": self.share_with_id,
             "permission": self.permissions,
-            "Tasks": "not yet"
+            "Tasks": [task.json() for task in self.tasks]
         }
 
     def save_to_db(self):
