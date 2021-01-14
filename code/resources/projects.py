@@ -2,26 +2,13 @@ from models.project import ProjectModel
 from flask_restful import Resource, reqparse
 from models.project import ProjectModel
 from models.user import UserModel
+from models.permission import PermissionModel
 from flask import jsonify
 from flask_jwt_extended import jwt_required
 from sqlalchemy import or_
 
 
 class Project(Resource):
-    project_parse = reqparse.RequestParser()
-    project_parse.add_argument('name',
-                               type=str,
-                               required=True,
-                               help='Name is required')
-    project_parse.add_argument('description',
-                               type=str,
-                               required=True,
-                               help="description is required")
-    project_parse.add_argument('created_by_id',
-                               type=str,
-                               required=True,
-                               help="created_by_id is required")
-
     @jwt_required
     def get(self, name):
         project = ProjectModel.find_by_name(name)
@@ -31,6 +18,20 @@ class Project(Resource):
 
     @jwt_required
     def post(self, name):
+        project_parse = reqparse.RequestParser()
+        project_parse.add_argument('name',
+                                   type=str,
+                                   required=True,
+                                   help='Name is required')
+        project_parse.add_argument('description',
+                                   type=str,
+                                   required=True,
+                                   help="description is required")
+        project_parse.add_argument('created_by_id',
+                                   type=str,
+                                   required=True,
+                                   help="created_by_id is required")
+
         project = ProjectModel.find_by_name(name)
         if project:
             return jsonify({
@@ -45,12 +46,73 @@ class Project(Resource):
         return {"Message": "Project Created"}
 
     @jwt_required
-    def put(self):
-        pass
+    def put(self, name):
+        project_parse = reqparse.RequestParser()
+        project_parse.add_argument('id',
+                                   type=int,
+                                   required=True,
+                                   help="user id is required")
+        project_parse.add_argument('description',
+                                   type=str,
+                                   required=True,
+                                   help="description is required")
+        data = project_parse.parse_args()
+        project = ProjectModel.find_by_name(name)
+
+        if project:
+            if project.created_by_id == data['id']:
+                #owner can do anything
+                project.description = data['description']
+                project.save_to_db()
+                return jsonify({"Message": "Project Updated.."})
+            else:
+                #not owner
+                if project.permissions == 2:  #allow update
+                    project.description = data['description']
+                    project.save_to_db()
+                    return jsonify({
+                        "Message":
+                        "Project Details Updated..",
+                        "Note":
+                        "You are part of this project not Owner."
+                    })
+
+                #no permission to update
+                return jsonify({
+                    "Message":
+                    "You Don't Have a Permission to Edit this Project Details. Contact to Project Owner."
+                })
+
+        return jsonify({"Message": "Project Not Found."})
 
     @jwt_required
-    def delete(self):
-        pass
+    def delete(self, name):
+        project = ProjectModel.find_by_name(name)
+        project_parse = reqparse.RequestParser()
+        project_parse.add_argument('id',
+                                   type=int,
+                                   required=True,
+                                   help="user id is required")
+
+        data = project_parse.parse_args()
+        if project:
+            if project.created_by_id == data['id']:
+                #owner can do anything
+                project.delete_from_db()
+                return jsonify({"Message": "Project deleted"})
+            else:
+                #not owner
+                if project.permissions == 3:  #allow delete
+                    project.delete_from_db()
+                    return jsonify({"Message": "Project Deleted"})
+
+                #no permission to update
+                return jsonify({
+                    "Message":
+                    "You Don't Have a Permission to Delete this Project Details. Contact to Project Owner."
+                })
+
+        return jsonify({"Message": "Project Not Found."})
 
 
 class ProjectShare(Resource):
