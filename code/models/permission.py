@@ -11,6 +11,13 @@ class PermissionModel(db.Model):
         self.name = name
         self.description = description
 
+    def json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description
+        }
+
     def save_to_db(self):
         db.session.add(self)
         db.session.commit()
@@ -18,3 +25,7 @@ class PermissionModel(db.Model):
     def delete_from_db(self):
         db.sessoin.delete(self)
         db.session.commit()
+
+    @classmethod
+    def find_by_id(cls, id):
+        return PermissionModel.query.filter_by(id=id).first()

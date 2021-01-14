@@ -3,6 +3,7 @@ from flask_restful import Api
 from resources.users import UserLogin, UserRegister
 from resources.projects import Project, ProjectShare, ProjectList
 from resources.task import Task, TaskList
+from resources.permission import Permission
 from models.permission import PermissionModel
 from flask_jwt_extended import JWTManager
 
@@ -29,6 +30,7 @@ api.add_resource(ProjectShare, '/project/share')
 api.add_resource(ProjectList, '/projects/<int:id>')
 api.add_resource(Task, '/project/task/<int:id>')
 api.add_resource(TaskList, '/project/tasks')
+api.add_resource(Permission, '/permission')
 
 if __name__ == '__main__':
     from config import db

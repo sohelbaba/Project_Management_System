@@ -4,6 +4,7 @@ from models.project import ProjectModel
 from models.user import UserModel
 from flask import jsonify
 from flask_jwt_extended import jwt_required
+from sqlalchemy import or_
 
 
 class Project(Resource):
@@ -67,14 +68,37 @@ class ProjectShare(Resource):
                                     required=True,
                                     help="permission is required")
 
-    @jwt_required
+    #@jwt_required
     def put(self):
         data = ProjectShare.projectshare_parse.parse_args()
-        project = ProjectModel.find_by_id(data['uuid'])
-        project.share_with_id = data['share_with_id']
-        project.permissions = data['permission_id']
-        project.save_to_db()
-        return jsonify({"Message": "Project Share successfull"})
+        user = UserModel.query.filter_by(id=data['share_with_id']).first()
+
+        if user == None:
+            return jsonify({"Message": "User Not Found"})
+        else:
+            if user.status:
+                project = ProjectModel.find_by_id(data['uuid'])
+                if project:
+                    if project.json()['created_by'] == data['share_with_id']:
+                        return jsonify({
+                            "Message":
+                            "Owner cannot share a project with itself.."
+                        })
+
+                    project.share_with_id = data['share_with_id']
+                    project.permissions = data['permission_id']
+                    project.save_to_db()
+
+                    return jsonify({
+                        "Message": "Project Share successfull",
+                        "Share with": data['share_with_id']
+                    })
+                return jsonify({"Message": "Project Not Found"})
+
+            return jsonify({
+                "Message":
+                "User Is Not Active. you can't share Your project"
+            })
 
 
 class ProjectList(Resource):
@@ -85,6 +109,10 @@ class ProjectList(Resource):
                 created_by_id=id).all()
         ]
         if len(projects) == 0:
-            return jsonify(
-                {"Message": "You don't have any project created yet."})
+            share_projects = [
+                project.json() for project in ProjectModel.query.filter_by(
+                    share_with_id=id).all()
+            ]
+            return jsonify({"Shared_Projects": share_projects})
+
         return jsonify({"Projects": projects})

@@ -1,6 +1,7 @@
 from config import db
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import text
+from models.permission import PermissionModel
 import re
 import uuid
 import base64
@@ -46,12 +47,19 @@ class ProjectModel(db.Model):
     def json(self):
 
         return {
-            "uuid": self.uuid,
-            "name": self.name,
-            "description": self.description,
-            "created_by": self.created_by_id,
-            "share_with": self.share_with_id,
-            "permission": self.permissions,
+            "uuid":
+            self.uuid,
+            "name":
+            self.name,
+            "description":
+            self.description,
+            "created_by":
+            self.created_by.name,
+            "share_with":
+            self.share_by.name,
+            "permission":
+            PermissionModel.query.filter_by(
+                id=self.permissions).first().json()['name'],
             "Tasks": [task.json() for task in self.tasks]
         }
 
