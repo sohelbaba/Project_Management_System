@@ -6,7 +6,7 @@ class TaskModel(db.Model):
     __tablename__ = 'task'
 
     id = db.Column(db.Integer, primary_key=True)
-    task_name = db.Column(db.String(250))
+    task_name = db.Column(db.String(250), unique=True)
     description = db.Column(db.Text)
     uuid = db.Column(db.Integer, db.ForeignKey('project.uuid'), default=None)
 
@@ -21,6 +21,10 @@ class TaskModel(db.Model):
             "description": self.description,
             "uuid": self.uuid
         }
+
+    @classmethod
+    def find_by_name(cls, name):
+        return TaskModel.query.filter_by(task_name=name).first()
 
     def save_to_db(self):
         db.session.add(self)

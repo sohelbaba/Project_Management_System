@@ -28,11 +28,11 @@ api.add_resource(UserLogin, '/authentication')
 api.add_resource(Project, '/project/<string:name>')
 api.add_resource(ProjectShare, '/project/share')
 api.add_resource(ProjectList, '/projects/<int:id>')
-api.add_resource(Task, '/project/task/<int:id>')
-api.add_resource(TaskList, '/project/tasks')
+api.add_resource(Task, '/project/task/<string:name>')
+api.add_resource(TaskList, '/project/task')
 api.add_resource(Permission, '/permission')
 
 if __name__ == '__main__':
     from config import db
     db.init_app(app)
-    app.run(port=5000)
+    app.run(port=5000, debug=True)

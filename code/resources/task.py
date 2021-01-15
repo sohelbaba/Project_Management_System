@@ -3,6 +3,7 @@ from flask_restful import Resource, reqparse
 from flask import jsonify
 from models.project import ProjectModel
 from flask_jwt_extended import jwt_required
+from sqlalchemy import and_
 
 
 class Task(Resource):
@@ -12,7 +13,7 @@ class Task(Resource):
     parse.add_argument('id', type=int, required=True, help='id Required..')
     parse.add_argument('task_name',
                        type=str,
-                       required=True,
+                       required=False,
                        help='task name Required..')
     parse.add_argument('task_desc',
                        type=str,
@@ -20,15 +21,20 @@ class Task(Resource):
                        help='task_desc Required..')
 
     @jwt_required
-    def post(self, id):
+    def post(self, name):
         data = Task.parse.parse_args()
         project = ProjectModel.query.filter_by(uuid=data['uuid']).first()
 
         if project:
             if project.json()["created_by"] == data["id"]:
                 #owner
-                task = TaskModel(data['task_name'], data['task_desc'],
-                                 data["uuid"])
+                if TaskModel.find_by_name(name):
+                    return jsonify({
+                        "Message":
+                        "Please Provide unique name to each task."
+                    })
+
+                task = TaskModel(name, data['task_desc'], data["uuid"])
                 task.save_to_db()
                 project = ProjectModel.find_by_id(data['uuid'])
                 project.task_id = task
@@ -43,8 +49,88 @@ class Task(Resource):
 
         return jsonify({"Message": "Project Not Found"})
 
+    @jwt_required
+    def get(self, name):
+
+        task = TaskModel.find_by_name(name)
+        if task:
+            return jsonify({"Task": task.json()})
+        return jsonify({"Message": "Task Not Found."})
+
+    @jwt_required
+    def put(self, name):
+
+        data = Task.parse.parse_args()
+        project = ProjectModel.query.filter_by(uuid=data['uuid']).first()
+
+        if project:
+            task = TaskModel.query.filter(
+                and_(TaskModel.uuid == data['uuid'],
+                     TaskModel.task_name == name)).first()
+            if task:
+                if project.json()['created_by'] == data['id']:
+                    #owner
+                    task.description = data['task_desc']
+                    task.save_to_db()
+                    return jsonify({"Message": "Task Edited"})
+
+                elif project.json()['permission'] == 2:
+                    #share with permission to delete
+                    task.description = data['task_desc']
+                    task.save_to_db()
+                    return jsonify({"Message": "Task Edited"})
+
+                return jsonify(
+                    {"Message": "You Don't Have Permission to Delete Task."})
+
+            return jsonify({"Message": "Task Not Found."})
+
+        return jsonify({"Message": "Project Not Found."})
+
+    @jwt_required
+    def delete(self, name):
+        #user id,project id,task_name
+        parse = reqparse.RequestParser()
+        parse.add_argument('uuid',
+                           type=str,
+                           required=True,
+                           help='uuid Required..')
+        parse.add_argument('id', type=int, required=True, help='id Required..')
+
+        data = parse.parse_args()
+
+        project = ProjectModel.find_by_id(data['uuid'])
+        if project:
+            task = TaskModel.query.filter(
+                and_(TaskModel.uuid == data['uuid'],
+                     TaskModel.task_name == name)).first()
+            if task:
+                if project.json()['created_by'] == data['id']:
+                    #owner
+                    task.delete_from_db()
+                    return jsonify({"Message": "Task Deleted"})
+
+                elif project.json()['permission'] == 3:
+                    #share with permission to delete
+                    task.delete_from_db()
+                    return jsonify({"Message": "Task Deleted"})
+
+                return jsonify(
+                    {"Message": "You Don't Have Permission to Delete Task."})
+
+            return jsonify({"Message": "Task Not Found."})
+
+        return jsonify({"Message": "Project Not Found"})
+
 
 class TaskList(Resource):
+    parse = reqparse.RequestParser()
+    parse.add_argument('uuid', type=str, required=True, help='uuid Required..')
+
     def get(self):
-        tasks = [task.json() for task in TaskModel.query.filter_by()]
+        data = TaskList.parse.parse_args()
+        tasks = [
+            task.json()
+            for task in TaskModel.query.filter_by(uuid=data['uuid'])
+        ]
         return jsonify({"Tasks": tasks})
