@@ -47,19 +47,12 @@ class ProjectModel(db.Model):
     def json(self):
 
         return {
-            "uuid":
-            self.uuid,
-            "name":
-            self.name,
-            "description":
-            self.description,
-            "created_by":
-            self.created_by.name,
-            "share_with":
-            self.share_by.name,
-            "permission":
-            PermissionModel.query.filter_by(
-                id=self.permissions).first().json()['name'],
+            "uuid": self.uuid,
+            "name": self.name,
+            "description": self.description,
+            "created_by": self.created_by.id,
+            "share_with": self.share_with_id,
+            "permission": self.permissions,
             "Tasks": [task.json() for task in self.tasks]
         }
 

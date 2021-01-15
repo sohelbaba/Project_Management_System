@@ -39,7 +39,7 @@ class Project(Resource):
                 "Project with this name alredy Exists. Provide Unique Name."
             })
 
-        data = Project.project_parse.parse_args()
+        data = project_parse.parse_args()
         project = ProjectModel(data['name'], data['description'],
                                data['created_by_id'])
         project.save_to_db()
