@@ -13,7 +13,6 @@ class PermissionModel(db.Model):
 
     def json(self):
         return {
-            "id": self.id,
             "name": self.name,
             "description": self.description
         }

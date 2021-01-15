@@ -25,17 +25,16 @@ class ProjectModel(db.Model):
                      primary_key=True)
     name = db.Column(db.String(60), unique=True)
     description = db.Column(db.Text)
-
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    share_with_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-
     created_by = db.relationship('UserModel',
                                  foreign_keys="ProjectModel.created_by_id")
 
-    share_by = db.relationship('UserModel',
-                               foreign_keys="ProjectModel.share_with_id")
+    # share_with_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    # share_by = db.relationship('UserModel',
+    #                            foreign_keys="ProjectModel.share_with_id")
+    # permissions = db.Column(db.Integer, default=None)
 
-    permissions = db.Column(db.Integer, default=None)
+    collaborators = db.relationship('ShareProjectModel', backref='project')
 
     tasks = db.relationship('TaskModel', backref='project')
 
@@ -51,8 +50,7 @@ class ProjectModel(db.Model):
             "name": self.name,
             "description": self.description,
             "created_by": self.created_by.id,
-            "share_with": [user.json()['id'] for user in share_by],
-            "permission": self.permissions,
+            "collaborators": [user.json() for user in self.collaborators],
             "Tasks": [task.json() for task in self.tasks]
         }
 

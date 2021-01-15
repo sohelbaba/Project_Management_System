@@ -3,6 +3,7 @@ from flask_restful import Resource, reqparse
 from models.project import ProjectModel
 from models.user import UserModel
 from models.permission import PermissionModel
+from models.shareproject import ShareProjectModel
 from flask import jsonify
 from flask_jwt_extended import jwt_required
 from sqlalchemy import or_
@@ -75,22 +76,25 @@ class Project(Resource):
                 return jsonify({"Message": "Project Updated.."})
             else:
                 #not owner
-                if project.permissions == 2:  # allow update
-                    project.description = data['description']
-                    project.save_to_db()
+                collaborator = ShareProjectModel.query.filter_by(
+                    share_with_id=data['id']).first()
+                if collaborator:
+                    if collaborator.permission == 2 or collaborator.permission == 3:
+                        project.description = data['description']
+                        project.save_to_db()
+                        return jsonify({
+                            "Message":
+                            "Project Details Updated..",
+                            "Note":
+                            "You are part of this project not Owner."
+                        })
+                    # # no permission to update
                     return jsonify({
                         "Message":
-                        "Project Details Updated..",
-                        "Note":
-                        "You are part of this project not Owner."
+                        "You Don't Have a Permission to Edit this Project Details. Contact to Project Owner."
                     })
 
-                # no permission to update
-                return jsonify({
-                    "Message":
-                    "You Don't Have a Permission to Edit this Project Details. Contact to Project Owner."
-                })
-
+                return jsonify({"Message": "Not Found."})
         return jsonify({"Message": "Project Not Found."})
 
     @jwt_required
@@ -107,68 +111,24 @@ class Project(Resource):
             if project.created_by_id == data['id']:
                 # owner can do anything
                 project.delete_from_db()
-                return jsonify({"Message": "Project deleted"})
+                return jsonify({"Message": "Project Deleted.."})
             else:
                 #not owner
-                if project.permissions == 3:  # allow delete
-                    project.delete_from_db()
-                    return jsonify({"Message": "Project Deleted"})
+                collaborator = ShareProjectModel.query.filter_by(
+                    share_with_id=data['id']).first()
+                if collaborator:
+                    if collaborator.permission == 3:
+                        project.delete_from_db()
+                        return jsonify({"Message": "Project Deleted."})
 
-                # no permission to update
-                return jsonify({
-                    "Message":
-                    "You Don't Have a Permission to Delete this Project Details. Contact to Project Owner."
-                })
-
-        return jsonify({"Message": "Project Not Found."})
-
-
-class ProjectShare(Resource):
-    projectshare_parse = reqparse.RequestParser()
-    projectshare_parse.add_argument('uuid',
-                                    type=str,
-                                    required=True,
-                                    help='uuid is required')
-    projectshare_parse.add_argument('share_with_id',
-                                    type=int,
-                                    required=True,
-                                    help="share id is required")
-    projectshare_parse.add_argument('permission_id',
-                                    type=str,
-                                    required=True,
-                                    help="permission is required")
-
-    # @jwt_required
-    def put(self):
-        data = ProjectShare.projectshare_parse.parse_args()
-        user = UserModel.query.filter_by(id=data['share_with_id']).first()
-
-        if user == None:
-            return jsonify({"Message": "User Not Found"})
-        else:
-            if user.status:
-                project = ProjectModel.find_by_id(data['uuid'])
-                if project:
-                    if project.json()['created_by'] == data['share_with_id']:
-                        return jsonify({
-                            "Message":
-                            "Owner cannot share a project with itself.."
-                        })
-
-                    project.share_with_id = data['share_with_id']
-                    project.permissions = data['permission_id']
-                    project.save_to_db()
-
+                    # no permission to update
                     return jsonify({
-                        "Message": "Project Share successfull",
-                        "Share with": data['share_with_id']
+                        "Message":
+                        "You Don't Have a Permission to Delete this Project Details. Contact to Project Owner."
                     })
-                return jsonify({"Message": "Project Not Found"})
 
-            return jsonify({
-                "Message":
-                "User Is Not Active. you can't share Your project"
-            })
+                return jsonify({"Message": "Not Found."})
+        return jsonify({"Message": "Project Not Found."})
 
 
 class ProjectList(Resource):
@@ -179,11 +139,13 @@ class ProjectList(Resource):
                 created_by_id=id).all()
         ]
 
-        share_projects = [
-            project.json() for project in ProjectModel.query.filter_by(
-                share_with_id=id).all()
+        share = [project.uuid for project in ShareProjectModel.query.filter_by(
+            share_with_id=id).all()]
+
+        Collaborators = [
+            ProjectModel.find_by_id(uuid).json() for uuid in share if ProjectModel.find_by_id(uuid) != None
         ]
-        return jsonify({"Created Projects": projects, "Shared_Projects": share_projects})
+        return jsonify({"Created Projects": projects, "Collaborators": Collaborators})
 
 
 class AllProjectsList(Resource):

@@ -10,7 +10,7 @@ class UserModel(db.Model):
     password = db.Column(db.String(80), nullable=False)
     status = db.Column(db.Boolean, default=True)
 
-    # projects = db.relationship('ProjectModel',backref='user')
+    projects = db.relationship('ProjectModel', backref='user')
 
     def __init__(self, name, username, password):
         self.name = name
@@ -18,11 +18,11 @@ class UserModel(db.Model):
         self.password = password
 
     def json(self):
-        #json represantation of model object
+        # json represantation of model object
         return {
             "name": self.name,
             "username": self.username,
-            "password": hash(self.password) 
+            "password": hash(self.password)
         }
 
     def save_to_db(self):

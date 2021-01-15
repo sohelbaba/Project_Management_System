@@ -1,7 +1,8 @@
 from flask import Flask
 from flask_restful import Api
 from resources.users import UserLogin, UserRegister, UserList
-from resources.projects import Project, ProjectShare, ProjectList, AllProjectsList
+from resources.projects import Project, ProjectList, AllProjectsList
+from resources.shareproject import ProjectShare
 from resources.task import Task, TaskList
 from resources.permission import Permission
 from models.permission import PermissionModel
@@ -12,7 +13,8 @@ app.secret_key = 'PROJECT_MANAGMENT_SECRET_KEY'
 jwt = JWTManager(app)
 
 api = Api(app)  # api instance
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'  # set database url
+# set database url
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///projects.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
