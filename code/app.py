@@ -22,6 +22,21 @@ def init():
     db.create_all()
 
 
+@jwt.expired_token_loader
+def token_expired():
+    return {"message": "You Need To login Again.."}, 401
+
+
+@jwt.invalid_token_loader
+def invalid_toke(error):
+    return {"message": "Provided token is invalid "}, 401
+
+
+@jwt.unauthorized_loader
+def unauthorized(error):
+    return {"message": "Unauthorized entry "}, 401
+
+
 #endpoints
 api.add_resource(UserRegister, '/registration')
 api.add_resource(UserLogin, '/authentication')
