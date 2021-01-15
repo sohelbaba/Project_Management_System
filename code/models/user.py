@@ -22,7 +22,7 @@ class UserModel(db.Model):
         return {
             "name": self.name,
             "username": self.username,
-            "password": self.password
+            "password": hash(self.password) 
         }
 
     def save_to_db(self):

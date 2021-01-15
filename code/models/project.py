@@ -51,7 +51,7 @@ class ProjectModel(db.Model):
             "name": self.name,
             "description": self.description,
             "created_by": self.created_by.id,
-            "share_with": self.share_with_id,
+            "share_with": [user.json()['id'] for user in share_by],
             "permission": self.permissions,
             "Tasks": [task.json() for task in self.tasks]
         }

@@ -55,3 +55,9 @@ class UserLogin(Resource):
             }
 
         return jsonify({"Message": "Username or password InCorrect."})
+
+
+class UserList(Resource):
+    def get(self):
+        users = [user.json() for user in UserModel.query.all()]
+        return jsonify({"Users" : users})
