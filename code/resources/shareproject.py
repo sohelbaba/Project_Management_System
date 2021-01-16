@@ -7,24 +7,25 @@ from models.permission import PermissionModel
 from flask import jsonify
 from flask_jwt_extended import jwt_required
 from sqlalchemy import or_
+from validations import non_empty_string
 
 
 class ProjectShare(Resource):
     projectshare_parse = reqparse.RequestParser()
     projectshare_parse.add_argument('id',
-                                    type=int,
+                                    type=non_empty_string,
                                     required=True,
                                     help='id is required')
     projectshare_parse.add_argument('uuid',
-                                    type=str,
+                                    type=non_empty_string,
                                     required=True,
                                     help='uuid is required')
     projectshare_parse.add_argument('share_with_id',
-                                    type=int,
+                                    type=non_empty_string,
                                     required=True,
                                     help="share id is required")
     projectshare_parse.add_argument('permission',
-                                    type=str,
+                                    type=non_empty_string,
                                     required=True,
                                     help="permission is required")
 
@@ -33,7 +34,7 @@ class ProjectShare(Resource):
         user = UserModel.query.filter_by(id=data['share_with_id']).first()
 
         if user == None:
-            return jsonify({"Message": "User Not Found"})
+            return jsonify({"Message": "User Not Found", "value": 404})
         else:
             if user.status:
                 project = ProjectModel.find_by_id(data['uuid'])
@@ -57,10 +58,11 @@ class ProjectShare(Resource):
                                     "Share with": user.name
                                 })
                             return jsonify({"Message": "Enter permission is not Found."})
-                    return jsonify({"Message": "Owner can only allow to share projects."})
-                return jsonify({"Message": "Project Not Found"})
+                    return jsonify({"Message": "Owner can only allow to share projects.", "value": 203})
+                return jsonify({"Message": "Project Not Found", "value": 404})
 
             return jsonify({
                 "Message":
-                "User Is Not Active. you can't share Your project"
+                "User Is Not Active. you can't share Your project",
+                "value": 404
             })
