@@ -2,6 +2,7 @@ from models.task import TaskModel
 from flask_restful import Resource, reqparse
 from flask import jsonify
 from models.project import ProjectModel
+from models.shareproject import ShareProjectModel
 from flask_jwt_extended import jwt_required
 from sqlalchemy import and_
 
@@ -26,8 +27,8 @@ class Task(Resource):
         project = ProjectModel.query.filter_by(uuid=data['uuid']).first()
 
         if project:
-            if project.json()["created_by"] == data["id"]:
-                #owner
+            if project.created_by_id == data["id"]:
+                # owner
                 if TaskModel.find_by_name(name):
                     return jsonify({
                         "Message":
@@ -38,7 +39,6 @@ class Task(Resource):
                 task.save_to_db()
                 project = ProjectModel.find_by_id(data['uuid'])
                 project.task_id = task
-                project.uuid = data['uuid']
                 project.save_to_db()
                 return jsonify({"Message": "Task Added..."})
             else:
@@ -68,20 +68,24 @@ class Task(Resource):
                 and_(TaskModel.uuid == data['uuid'],
                      TaskModel.task_name == name)).first()
             if task:
-                if project.json()['created_by'] == data['id']:
-                    #owner
+                if project.created_by_id == data['id']:
+                    # owner
                     task.description = data['task_desc']
                     task.save_to_db()
                     return jsonify({"Message": "Task Edited"})
 
-                elif project.json()['permission'] == 2:
-                    #share with permission to delete
-                    task.description = data['task_desc']
-                    task.save_to_db()
-                    return jsonify({"Message": "Task Edited"})
+                else:
 
-                return jsonify(
-                    {"Message": "You Don't Have Permission to Delete Task."})
+                    collaborator = ShareProjectModel.query.filter_by(
+                        share_with_id=data['id']).first()
+
+                    if collaborator.permission == 'Edit' or collaborator.permission == 'Delete':
+                        # share with permission to delete
+                        task.description = data['task_desc']
+                        task.save_to_db()
+                        return jsonify({"Message": "Task Edited"})
+                    return jsonify(
+                        {"Message": "You Don't Have Permission to Edit Task."})
 
             return jsonify({"Message": "Task Not Found."})
 
@@ -89,7 +93,7 @@ class Task(Resource):
 
     @jwt_required
     def delete(self, name):
-        #user id,project id,task_name
+        # user id,project id,task_name
         parse = reqparse.RequestParser()
         parse.add_argument('uuid',
                            type=str,
@@ -105,21 +109,22 @@ class Task(Resource):
                 and_(TaskModel.uuid == data['uuid'],
                      TaskModel.task_name == name)).first()
             if task:
-                if project.json()['created_by'] == data['id']:
-                    #owner
+                if project.created_by_id == data['id']:
+                    # owner
                     task.delete_from_db()
                     return jsonify({"Message": "Task Deleted"})
 
-                elif project.json()['permission'] == 3:
-                    #share with permission to delete
-                    task.delete_from_db()
-                    return jsonify({"Message": "Task Deleted"})
+                else:
+                    collaborator = ShareProjectModel.query.filter_by(
+                        share_with_id=data['id']).first()
 
-                return jsonify(
-                    {"Message": "You Don't Have Permission to Delete Task."})
-
+                    if collaborator.permission == 'Delete':
+                        # share with permission to delete
+                        task.delete_from_db()
+                        return jsonify({"Message": "Task Deleted"})
+                    return jsonify(
+                        {"Message": "You Don't Have Permission to Delete Task."})
             return jsonify({"Message": "Task Not Found."})
-
         return jsonify({"Message": "Project Not Found"})
 
 
@@ -131,6 +136,6 @@ class TaskList(Resource):
         data = TaskList.parse.parse_args()
         tasks = [
             task.json()
-            for task in TaskModel.query.filter_by(uuid=data['uuid'])
+            for task in TaskModel.query.all()
         ]
         return jsonify({"Tasks": tasks})

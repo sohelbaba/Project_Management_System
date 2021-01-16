@@ -34,9 +34,11 @@ class ProjectModel(db.Model):
     #                            foreign_keys="ProjectModel.share_with_id")
     # permissions = db.Column(db.Integer, default=None)
 
-    collaborators = db.relationship('ShareProjectModel', backref='project')
+    collaborators = db.relationship(
+        'ShareProjectModel', cascade="all,delete", backref='project')
 
-    tasks = db.relationship('TaskModel', backref='project')
+    tasks = db.relationship(
+        'TaskModel', cascade="all,delete", backref='project')
 
     def __init__(self, name, description, created_by_id):
         self.name = name

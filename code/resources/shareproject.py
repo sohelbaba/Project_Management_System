@@ -11,6 +11,10 @@ from sqlalchemy import or_
 
 class ProjectShare(Resource):
     projectshare_parse = reqparse.RequestParser()
+    projectshare_parse.add_argument('id',
+                                    type=int,
+                                    required=True,
+                                    help='id is required')
     projectshare_parse.add_argument('uuid',
                                     type=str,
                                     required=True,
@@ -19,7 +23,7 @@ class ProjectShare(Resource):
                                     type=int,
                                     required=True,
                                     help="share id is required")
-    projectshare_parse.add_argument('permission_id',
+    projectshare_parse.add_argument('permission',
                                     type=str,
                                     required=True,
                                     help="permission is required")
@@ -34,22 +38,26 @@ class ProjectShare(Resource):
             if user.status:
                 project = ProjectModel.find_by_id(data['uuid'])
                 if project:
+                    if project.created_by_id == data['id']:
+                        if project.json()['created_by'] == data['share_with_id']:
+                            return jsonify({
+                                "Message":
+                                "Owner cannot share a project with itself.."
+                            })
+                        else:
+                            permission = PermissionModel.find_by_name(
+                                data['permission'])
+                            if permission:
+                                share = ShareProjectModel(
+                                    data['uuid'], data['share_with_id'], data['permission'])
+                                share.save_to_db()
 
-                    if project.json()['created_by'] == data['share_with_id']:
-                        return jsonify({
-                            "Message":
-                            "Owner cannot share a project with itself.."
-                        })
-
-                    share = ShareProjectModel(
-                        data['uuid'], data['share_with_id'], data['permission_id'])
-                    share.save_to_db()
-
-                    return jsonify({
-                        "Message": "Project Share successfull",
-                        "Share with": data['share_with_id']
-                    })
-
+                                return jsonify({
+                                    "Message": "Project Share successfull",
+                                    "Share with": user.name
+                                })
+                            return jsonify({"Message": "Enter permission is not Found."})
+                    return jsonify({"Message": "Owner can only allow to share projects."})
                 return jsonify({"Message": "Project Not Found"})
 
             return jsonify({

@@ -28,3 +28,7 @@ class PermissionModel(db.Model):
     @classmethod
     def find_by_id(cls, id):
         return PermissionModel.query.filter_by(id=id).first()
+
+    @classmethod
+    def find_by_name(cls, name):
+        return PermissionModel.query.filter_by(name=name).first()

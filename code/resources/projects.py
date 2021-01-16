@@ -2,6 +2,7 @@ from models.project import ProjectModel
 from flask_restful import Resource, reqparse
 from models.project import ProjectModel
 from models.user import UserModel
+from models.task import TaskModel
 from models.permission import PermissionModel
 from models.shareproject import ShareProjectModel
 from flask import jsonify
@@ -59,7 +60,10 @@ class Project(Resource):
                                    required=True,
                                    help="description is required")
         project_parse.add_argument('permission',
-                                   type=int,
+                                   type=str,
+                                   required=False)
+        project_parse.add_argument('name',
+                                   type=str,
                                    required=False)
 
         data = project_parse.parse_args()
@@ -72,6 +76,9 @@ class Project(Resource):
                 if data['permission'] != None:
                     project.permissions = data['permission']
 
+                if data['name'] != None:
+                    project.name = data['name']
+
                 project.save_to_db()
                 return jsonify({"Message": "Project Updated.."})
             else:
@@ -79,7 +86,7 @@ class Project(Resource):
                 collaborator = ShareProjectModel.query.filter_by(
                     share_with_id=data['id']).first()
                 if collaborator:
-                    if collaborator.permission == 2 or collaborator.permission == 3:
+                    if collaborator.permission == "Edit" or collaborator.permission == "Delete":
                         project.description = data['description']
                         project.save_to_db()
                         return jsonify({
@@ -117,7 +124,7 @@ class Project(Resource):
                 collaborator = ShareProjectModel.query.filter_by(
                     share_with_id=data['id']).first()
                 if collaborator:
-                    if collaborator.permission == 3:
+                    if collaborator.permission == "Delete":
                         project.delete_from_db()
                         return jsonify({"Message": "Project Deleted."})
 
