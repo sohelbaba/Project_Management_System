@@ -1,11 +1,10 @@
 from flask import Flask
 from flask_restful import Api
-from resources.users import UserLogin, UserRegister, UserList
+from resources.users import UserLogin, UserRegister, UserList, UserLogout
 from resources.projects import Project, ProjectList, AllProjectsList
 from resources.shareproject import ProjectShare
 from resources.task import Task, TaskList
 from resources.permission import Permission
-from models.permission import PermissionModel
 from flask_jwt_extended import JWTManager
 
 app = Flask(__name__)  # flask object
@@ -17,36 +16,61 @@ api = Api(app)  # api instance
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///projects.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
+blacklist = set()
 
 # before first request create database
+
+
 @app.before_first_request
 def init():
     db.create_all()
 
 
+@jwt.token_in_blacklist_loader
+def check_if_token_in_blacklist(decrypted_token):
+    jti = decrypted_token['jti']
+    return jti in blacklist
+
+
 @jwt.expired_token_loader
 def token_expired():
-    return {"message": "You Need To login Again.."}, 401
+    return {
+        "UnauthorizedError": {
+            "message": "Login Required",
+            "status": 401
+        }
+    }
 
 
 @jwt.invalid_token_loader
 def invalid_toke(error):
-    return {"message": "Provided token is invalid "}, 401
+    return {
+        "UnauthorizedError": {
+            "message": "Access Token Invalid",
+            "status": 401
+        }
+    }
 
 
 @jwt.unauthorized_loader
 def unauthorized(error):
-    return {"message": "Unauthorized entry "}, 401
+    return {
+        "UnauthorizedError": {
+            "message": "Login Required",
+            "status": 401
+        }
+    }
 
 
 # endpoints
 api.add_resource(UserRegister, '/registration')
 api.add_resource(UserLogin, '/authentication')
+api.add_resource(UserLogout, '/logout')
 api.add_resource(UserList, '/users')
 api.add_resource(Project, '/project/<string:name>')
 api.add_resource(ProjectShare, '/project/share')
-api.add_resource(ProjectList, '/projects/<int:id>')
-api.add_resource(AllProjectsList, '/projects')
+api.add_resource(ProjectList, '/projects')
+api.add_resource(AllProjectsList, '/Allprojects')
 api.add_resource(Task, '/project/task/<string:name>')
 api.add_resource(TaskList, '/project/task')
 api.add_resource(Permission, '/permission')

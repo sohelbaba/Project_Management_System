@@ -18,8 +18,7 @@ class TaskModel(db.Model):
     def json(self):
         return {
             "task_name": self.task_name,
-            "description": self.description,
-            "uuid": self.uuid
+            "description": self.description
         }
 
     @classmethod

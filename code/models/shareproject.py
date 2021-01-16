@@ -17,10 +17,9 @@ class ShareProjectModel(db.Model):
 
     def json(self):
         return {
+            "uuid": self.uuid,
             "Collaborator": UserModel.find_by_id(self.share_with_id).json()['name'],
-            "permission": self.permission,
-            "uuid": self.uuid
-
+            "permission": self.permission
         }
 
     @classmethod

@@ -12,16 +12,24 @@ class Permission(Resource):
     def get(self, id):
         permission = PermissionModel.query.filter_by(id=id).first()
         if permission:
-            return jsonify({"permission": permission.name})
+            return {"permission": permission.name}
 
-        return jsonify({"Message": "Incorrect Id", "value": 400})
+        return {
+            "PermissionExistsError": {
+                "message": "Permission with given id doesn't exists",
+                "status": 400
+            }}
 
     def post(self):
         data = Permission.parse.parse_args()
         permisson = PermissionModel.query.filter_by(id=data['id']).first()
         if permisson:
-            return jsonify({"Message": "Already added", "value": 401})
+            return {
+                "PermissionAlreadyExistsError": {
+                    "message": "Permission with given id already exists",
+                    "status": 400
+                }}
 
         permission = PermissionModel(data['name'], data['desc'])
         permission.save_to_db()
-        return jsonify({"Message": "Permission Add..", "value": 200})
+        return {"Message": "Permission Add..", "status": 200}

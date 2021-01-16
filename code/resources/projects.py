@@ -6,8 +6,8 @@ from models.task import TaskModel
 from models.permission import PermissionModel
 from models.shareproject import ShareProjectModel
 from flask import jsonify
-from flask_jwt_extended import jwt_required
-from sqlalchemy import or_
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from sqlalchemy import or_, and_
 from validations import non_empty_string
 
 
@@ -17,8 +17,13 @@ class Project(Resource):
     def get(self, name):
         project = ProjectModel.find_by_name(name)
         if project:
-            return jsonify({"project": project.json(), "value": 200})
-        return jsonify({"Message": "Project Not Found", "value": 404})
+            return {"project": project.json(), "status": 200, "id": get_jwt_identity()}
+
+        return {
+            "ProjectNotExistsError": {
+                "message": "Project with given name doesn't exists",
+                "status": 400,
+            }}
 
     @jwt_required
     def post(self, name):
@@ -31,32 +36,24 @@ class Project(Resource):
                                    type=non_empty_string,
                                    required=True,
                                    help="description is required")
-        project_parse.add_argument('created_by_id',
-                                   type=non_empty_string,
-                                   required=True,
-                                   help="created_by_id is required")
 
         project = ProjectModel.find_by_name(name)
         if project:
-            return jsonify({
-                "Message":
-                "Project with this name alredy Exists. Provide Unique Name.",
-                "value": 401
-            })
+            return {
+                "ProjectAlreadyExistsError": {
+                    "message": "Project with given name already exists",
+                    "status": 400
+                }}
 
         data = project_parse.parse_args()
         project = ProjectModel(data['name'], data['description'],
-                               data['created_by_id'])
+                               get_jwt_identity())
         project.save_to_db()
-        return jsonify({"Message": "Project Created", "value": 200})
+        return {"message": "Project Created", "status": 200}
 
     @jwt_required
     def put(self, name):
         project_parse = reqparse.RequestParser()
-        project_parse.add_argument('id',
-                                   type=int,
-                                   required=True,
-                                   help="user id is required")
         project_parse.add_argument('description',
                                    type=non_empty_string,
                                    required=True,
@@ -72,7 +69,7 @@ class Project(Resource):
         project = ProjectModel.find_by_name(name)
 
         if project:
-            if project.created_by_id == data['id']:
+            if project.created_by_id == get_jwt_identity():
                 # owner can do anything
                 project.description = data['description']
                 if data['permission'] != None:
@@ -82,85 +79,105 @@ class Project(Resource):
                     project.name = data['name']
 
                 project.save_to_db()
-                return jsonify({"Message": "Project Updated..", "value": 200})
+                return {"Message": "Project Updated..", "status": 200}
             else:
-                #not owner
-                collaborator = ShareProjectModel.query.filter_by(
-                    share_with_id=data['id']).first()
+                # not owner but have permission to edit
+
+                collaborator = ShareProjectModel.query.filter(
+                    and_(ShareProjectModel.share_with_id == get_jwt_identity(), ShareProjectModel.uuid == project.uuid)).first()
+
                 if collaborator:
                     if collaborator.permission == "Edit" or collaborator.permission == "Delete":
                         project.description = data['description']
                         project.save_to_db()
-                        return jsonify({
-                            "Message":
+                        return {
+                            "message":
                             "Project Details Updated..",
                             "Note":
                             "You are part of this project not Owner.",
-                            "value": 200
-                        })
-                    # # no permission to update
-                    return jsonify({
-                        "Message":
-                        "You Don't Have a Permission to Edit this Project Details. Contact to Project Owner.",
-                        "value": 203
-                    })  # 203 -> Non Authorized
+                            "status": 200
+                        }
 
-                return jsonify({"Message": "Not Found.", "value": 404})
-        return jsonify({"Message": "Project Not Found.", "value": 404})
+                    # no permission to update
+                    return {
+                        "UpdatingProjectError": {
+                            "message": "You don't have Edit permission",
+                            "status": 401,
+                            "id":  get_jwt_identity(),
+                            "coll": collaborator.permission
+                        }}
+
+                return {
+                    "CollaboratorNotExistsError": {
+                        "message": "Collaborator with given id doesn't exists",
+                        "status": 400
+                    }}
+
+        return {
+            "ProjectNotExistsError": {
+                "message": "Project with given name doesn't exists",
+                "status": 400
+            }}
 
     @jwt_required
     def delete(self, name):
         project = ProjectModel.find_by_name(name)
         project_parse = reqparse.RequestParser()
-        project_parse.add_argument('id',
-                                   type=int,
-                                   required=True,
-                                   help="user id is required")
-
         data = project_parse.parse_args()
         if project:
-            if project.created_by_id == data['id']:
+            if project.created_by_id == get_jwt_identity():
                 # owner can do anything
                 project.delete_from_db()
-                return jsonify({"Message": "Project Deleted..", "value": 200})
+                return {"message": "Project Deleted..", "status": 200}
             else:
-                #not owner
-                collaborator = ShareProjectModel.query.filter_by(
-                    share_with_id=data['id']).first()
+                # not owner but have a permission to delete
+                collaborator = ShareProjectModel.query.filter(
+                    and_(ShareProjectModel.share_with_id == get_jwt_identity(), ShareProjectModel.uuid == project.uuid)).first()
+
                 if collaborator:
                     if collaborator.permission == "Delete":
                         project.delete_from_db()
-                        return jsonify({"Message": "Project Deleted.", "value": 200})
+                        return {"message": "Project Deleted.", "status": 200}
 
                     # no permission to update
-                    return jsonify({
-                        "Message":
-                        "You Don't Have a Permission to Delete this Project Details. Contact to Project Owner.",
-                        "value": 203
-                    })
-
-                return jsonify({"Message": "Not Found.", "value": 404})
-        return jsonify({"Message": "Project Not Found.", "value": 404})
+                    return {
+                        "DeletingProjectError": {
+                            "message": "You don't have Delete permission",
+                            "status": 401
+                        }}
+                return {
+                    "CollaboratorNotExistsError": {
+                        "message": "Collaborator with given id doesn't exists",
+                        "status": 400
+                    }}
+        return {
+            "ProjectNotExistsError": {
+                "message": "Project with given name doesn't exists",
+                "status": 400
+            }}
 
 
 class ProjectList(Resource):
-    def get(self, id):
+
+    @jwt_required
+    def get(self):
         # remaining task -> join user & project
         projects = [
             project.json() for project in ProjectModel.query.filter_by(
-                created_by_id=id).all()
+                created_by_id=get_jwt_identity()).all()
         ]
 
         share = [project.uuid for project in ShareProjectModel.query.filter_by(
-            share_with_id=id).all()]
+            share_with_id=get_jwt_identity()).all()]
 
-        Collaborators = [
+        Sharing_Projects = [
             ProjectModel.find_by_id(uuid).json() for uuid in share if ProjectModel.find_by_id(uuid) != None
         ]
-        return jsonify({"Created Projects": projects, "Collaborators": Collaborators, "value": 200})
+        return {"Created Projects": projects, "Sharing_Projects": Sharing_Projects, "status": 200}
 
 
 class AllProjectsList(Resource):
+
     def get(self):
         projects = [project.json() for project in ProjectModel.query.all()]
-        return jsonify({"Projects": projects, "value": 200})
+        return {"Projects": projects, "status": 200}

@@ -2,9 +2,10 @@ from flask_restful import Resource, reqparse
 from werkzeug.security import safe_str_cmp
 from models.user import UserModel
 from flask import jsonify
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, get_raw_jwt, jwt_required
 from validations import non_empty_string
 
+blacklist = set()
 
 _user_parse = reqparse.RequestParser()
 _user_parse.add_argument('name',
@@ -25,21 +26,31 @@ class User(Resource):
     def get(self, username):
         user = UserModel.find_by_username(username)
         if user:
-            return jsonify({"user": user, "value": 200})
-        return jsonify({"Message": "User NotFound.", "value": 404})
+            return user.json()
+
+        return {
+            "UserNotExistsError": {
+                "message": "User with given username doesn't exists",
+                "status": 400
+            }}
 
 
 class UserRegister(Resource):
     def post(self):
         data = _user_parse.parse_args()
+
         # check username already exits
         user = UserModel.find_by_username(data['username'])
         if user:
             return jsonify(
-                {"Message": "User with this Username already exists..", "value": 406})  # 406- Not Acceptable
+                {"UserNameAlreadyExistsError": {
+                    "message": "User with given name already exists",
+                    "status": 400
+                }})
+
         user = UserModel(data['name'], data['username'], data['password'])
         user.save_to_db()
-        return jsonify({"Message": "Registration Done..", "value": 200})
+        return jsonify({"Message": "Registration Done..", "status": 200})
 
 
 class UserLogin(Resource):
@@ -47,18 +58,29 @@ class UserLogin(Resource):
         data = _user_parse.parse_args()
         user = UserModel.find_by_username(data['username'])
         if user and safe_str_cmp(user.password, data['password']):
-            access_token = create_access_token(identity=user.id, fresh=True)
-            refresh_token = create_refresh_token(user.id)
+            access_token = create_access_token(identity=user.id)
             return {
                 "access_token": access_token,
-                "refresh_token": refresh_token,
-                "value": 200
+                "status": 200
             }
 
-        return jsonify({"Message": "Username or password InCorrect.", "value": 401})
+        return {
+            "UnauthorizedError": {
+                "message": "Invalid username or password",
+                "status": 401
+            }}
+
+
+class UserLogout(Resource):
+
+    @jwt_required
+    def get(self):
+        jti = get_raw_jwt()['jti']
+        blacklist.add(jti)
+        return {"message": "Successfully logged out"}
 
 
 class UserList(Resource):
     def get(self):
         users = [user.json() for user in UserModel.query.all()]
-        return jsonify({"Users": users, "value": 200})
+        return {"Users": users, "status": 200}
