@@ -36,6 +36,10 @@ class Project(Resource):
                                    type=non_empty_string,
                                    required=True,
                                    help="description is required")
+        project_parse.add_argument('project_color_identity',
+                                   type=non_empty_string,
+                                   required=True,
+                                   help="project_color_identity is required")
 
         project = ProjectModel.find_by_name(name)
         if project:
@@ -47,7 +51,7 @@ class Project(Resource):
 
         data = project_parse.parse_args()
         project = ProjectModel(data['name'], data['description'],
-                               get_jwt_identity())
+                               get_jwt_identity(), data['project_color_identity'])
         project.save_to_db()
         return {"message": "Project Created", "status": 200}
 

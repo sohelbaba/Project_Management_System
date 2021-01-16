@@ -1,7 +1,8 @@
 from config import db
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import text
+from sqlalchemy import text, DateTime
 from models.permission import PermissionModel
+import datetime
 import re
 import uuid
 import base64
@@ -28,11 +29,8 @@ class ProjectModel(db.Model):
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_by = db.relationship('UserModel',
                                  foreign_keys="ProjectModel.created_by_id")
-
-    # share_with_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    # share_by = db.relationship('UserModel',
-    #                            foreign_keys="ProjectModel.share_with_id")
-    # permissions = db.Column(db.Integer, default=None)
+    project_color_identity = db.Column(db.String(20), unique=True)
+    created_at = db.Column(DateTime, default=datetime.datetime.now)
 
     collaborators = db.relationship(
         'ShareProjectModel', cascade="all,delete", backref='project')
@@ -40,19 +38,22 @@ class ProjectModel(db.Model):
     tasks = db.relationship(
         'TaskModel', cascade="all,delete", backref='project')
 
-    def __init__(self, name, description, created_by_id):
+    def __init__(self, name, description, created_by_id, project_color_identity):
         self.name = name
         self.description = description
         self.created_by_id = created_by_id
+        self.project_color_identity = project_color_identity
 
     def json(self):
 
         return {
-            "uuid": self.uuid,
-            "name": self.name,
-            "description": self.description,
-            "created_by": self.created_by.id,
-            "collaborators": [user.json() for user in self.collaborators],
+            "UUID": self.uuid,
+            "Project_Name": self.name,
+            "Project_Description": self.description,
+            "Created_by": self.created_by.id,
+            "Created_at": str(self.created_at),
+            "Project_color_identity": self.project_color_identity,
+            "Collaborators": [user.json() for user in self.collaborators],
             "Tasks": [task.json() for task in self.tasks]
         }
 
