@@ -50,7 +50,7 @@ class ProjectModel(db.Model):
             "UUID": self.uuid,
             "Project_Name": self.name,
             "Project_Description": self.description,
-            "Created_by": self.created_by.id,
+            "Created_by": self.created_by.name,
             "Created_at": str(self.created_at),
             "Project_color_identity": self.project_color_identity,
             "Collaborators": [user.json() for user in self.collaborators],

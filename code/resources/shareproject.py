@@ -40,8 +40,8 @@ class ProjectShare(Resource):
             if user.status:
                 project = ProjectModel.find_by_id(data['uuid'])
                 if project:
-                    if project.json()['created_by'] == get_jwt_identity():
-                        if project.json()['created_by'] == data['share_with_id']:
+                    if project.created_by_id == get_jwt_identity():
+                        if project.created_by_id == data['share_with_id']:
                             return {
                                 "SharingProjectError": {
                                     "message": "You don't Share Project itself.",
