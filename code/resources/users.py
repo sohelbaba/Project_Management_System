@@ -57,18 +57,20 @@ class UserLogin(Resource):
     def get(self):
         data = _user_parse.parse_args()
         user = UserModel.find_by_username(data['username'])
-        if user and safe_str_cmp(user.password, data['password']):
-            access_token = create_access_token(identity=user.id)
-            return {
-                "access_token": access_token,
-                "status": 200
-            }
+        if user.status:
+            if user and safe_str_cmp(user.password, data['password']):
+                access_token = create_access_token(identity=user.id)
+                return {
+                    "access_token": access_token,
+                    "status": 200
+                }
 
-        return {
-            "UnauthorizedError": {
-                "message": "Invalid username or password",
-                "status": 401
-            }}
+            return {
+                "UnauthorizedError": {
+                    "message": "Invalid username or password",
+                    "status": 401
+                }}
+        return {"message": "User Deactivated. Can't login Again"}
 
 
 class UserLogout(Resource):
@@ -84,3 +86,16 @@ class UserList(Resource):
     def get(self):
         users = [user.json() for user in UserModel.query.all()]
         return {"Users": users, "status": 200}
+
+
+class UserDeactivated(Resource):
+    def put(self, id):
+        user = UserModel.find_by_id(id)
+        if user:
+            user.status = False
+            user.save_to_db()
+            return {"message": "User Deactivated"}
+        return {"UserNotExistsError": {
+            "meesage": "user with given id doen't Exists",
+            "value": 401
+        }}

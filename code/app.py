@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_restful import Api
-from resources.users import UserLogin, UserRegister, UserList, UserLogout
+from resources.users import UserLogin, UserRegister, UserList, UserLogout, UserDeactivated
 from resources.projects import Project, ProjectList, AllProjectsList
 from resources.shareproject import ProjectShare
 from resources.task import Task, TaskList
@@ -66,6 +66,7 @@ def unauthorized(error):
 api.add_resource(UserRegister, '/registration')
 api.add_resource(UserLogin, '/authentication')
 api.add_resource(UserLogout, '/logout')
+api.add_resource(UserDeactivated, '/deactivate/<int:id>')
 api.add_resource(UserList, '/users')
 api.add_resource(Project, '/project/<string:name>')
 api.add_resource(ProjectShare, '/project/share')

@@ -20,9 +20,11 @@ class UserModel(db.Model):
     def json(self):
         # json represantation of model object
         return {
-            "name": self.name,
-            "username": self.username,
-            "password": hash(self.password)
+            "User Id": self.id,
+            "Name": self.name,
+            "Username": self.username,
+            "Password": hash(self.password),
+            "Status": self.status
         }
 
     def save_to_db(self):

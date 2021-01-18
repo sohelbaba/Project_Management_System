@@ -17,7 +17,7 @@ class Project(Resource):
     def get(self, name):
         project = ProjectModel.find_by_name(name)
         if project:
-            return {"project": project.json(), "status": 200, "id": get_jwt_identity()}
+            return {"project": project.json(), "status": 200}
 
         return {
             "ProjectNotExistsError": {
