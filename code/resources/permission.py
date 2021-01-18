@@ -33,3 +33,10 @@ class Permission(Resource):
         permission = PermissionModel(data['name'], data['desc'])
         permission.save_to_db()
         return {"Message": "Permission Add..", "status": 200}
+
+
+class PermissionList(Resource):
+    def get(self):
+        permission = [permission.json()
+                      for permission in PermissionModel.query.all()]
+        return {'Permission': permission, "status": 200}

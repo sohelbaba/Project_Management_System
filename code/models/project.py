@@ -51,7 +51,7 @@ class ProjectModel(db.Model):
             "Project_Name": self.name,
             "Project_Description": self.description,
             "Created_by": self.created_by.name,
-            "Created_at": str(self.created_at),
+            "Created_at": str(self.created_at).split('.')[0],
             "Project_color_identity": self.project_color_identity,
             "Collaborators": [user.json() for user in self.collaborators],
             "Tasks": [task.json() for task in self.tasks]

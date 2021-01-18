@@ -2,9 +2,9 @@ from flask import Flask
 from flask_restful import Api
 from resources.users import UserLogin, UserRegister, UserList, UserLogout, UserDeactivated
 from resources.projects import Project, ProjectList, AllProjectsList
-from resources.shareproject import ProjectShare
-from resources.task import Task, TaskList
-from resources.permission import Permission
+from resources.shareproject import ProjectShare, SharedProjectList
+from resources.task import Task, TaskList, AllTaskList
+from resources.permission import Permission, PermissionList
 from flask_jwt_extended import JWTManager
 
 app = Flask(__name__)  # flask object
@@ -63,18 +63,27 @@ def unauthorized(error):
 
 
 # endpoints
+# user
 api.add_resource(UserRegister, '/registration')
 api.add_resource(UserLogin, '/authentication')
 api.add_resource(UserLogout, '/logout')
-api.add_resource(UserDeactivated, '/deactivate/<int:id>')
-api.add_resource(UserList, '/users')
+# project
 api.add_resource(Project, '/project/<string:name>')
 api.add_resource(ProjectShare, '/project/share')
 api.add_resource(ProjectList, '/projects')
-api.add_resource(AllProjectsList, '/Allprojects')
 api.add_resource(Task, '/project/task/<string:name>')
 api.add_resource(TaskList, '/project/task')
 api.add_resource(Permission, '/permission')
+
+
+# admin api's
+api.add_resource(AllProjectsList, '/Allprojects')
+api.add_resource(UserList, '/users')
+api.add_resource(AllTaskList, '/tasks')
+api.add_resource(SharedProjectList, '/shareprojects')
+api.add_resource(UserDeactivated, '/deactivate/<int:id>')
+api.add_resource(PermissionList, '/permissions')
+
 
 if __name__ == '__main__':
     from config import db

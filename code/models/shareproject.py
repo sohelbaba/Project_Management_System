@@ -1,5 +1,6 @@
 from config import db
 from models.user import UserModel
+from models.project import ProjectModel
 
 
 class ShareProjectModel(db.Model):
@@ -18,6 +19,7 @@ class ShareProjectModel(db.Model):
     def json(self):
         return {
             "uuid": self.uuid,
+            "Created By": ProjectModel.query.filter_by(uuid=self.uuid).first().created_by.name,
             "Collaborator": UserModel.find_by_id(self.share_with_id).name,
             "permission": self.permission
         }

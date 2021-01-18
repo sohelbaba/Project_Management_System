@@ -184,4 +184,4 @@ class AllProjectsList(Resource):
 
     def get(self):
         projects = [project.json() for project in ProjectModel.query.all()]
-        return {"Projects": projects, "status": 200}
+        return {"TotalProjects": len(projects), "Projects": projects, "status": 200}

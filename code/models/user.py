@@ -1,4 +1,6 @@
 from config import db
+import datetime
+from sqlalchemy import DateTime
 
 
 class UserModel(db.Model):
@@ -9,6 +11,7 @@ class UserModel(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(80), nullable=False)
     status = db.Column(db.Boolean, default=True)
+    created_at = db.Column(DateTime, default=datetime.datetime.now)
 
     projects = db.relationship('ProjectModel', backref='user')
 
@@ -24,6 +27,7 @@ class UserModel(db.Model):
             "Name": self.name,
             "Username": self.username,
             "Password": hash(self.password),
+            "Created_at": str(self.created_at).split('.')[0],
             "Status": self.status
         }
 

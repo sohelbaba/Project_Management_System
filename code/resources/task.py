@@ -185,3 +185,9 @@ class TaskList(Resource):
             for task in TaskModel.query.filter_by(uuid=data['uuid'])
         ]
         return {"Tasks": tasks, "status": 200}
+
+
+class AllTaskList(Resource):
+    def get(self):
+        tasks = [task.json() for task in TaskModel.query.all()]
+        return {"TotalTasks": len(tasks), "Tasks": tasks, "status": 200}

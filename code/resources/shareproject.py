@@ -80,3 +80,10 @@ class ProjectShare(Resource):
                     "message": "User with give id is not Active.",
                     "status": 401
                 }}
+
+
+class SharedProjectList(Resource):
+    def get(self):
+        sharedprojetclist = [shareproject.json()
+                             for shareproject in ShareProjectModel.query.all()]
+        return {"TotalSharedProjects": len(sharedprojetclist), 'ShareProjects': sharedprojetclist, "status": 200}

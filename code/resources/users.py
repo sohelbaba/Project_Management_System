@@ -48,6 +48,14 @@ class UserRegister(Resource):
                     "status": 400
                 }})
 
+        if data['username'] == data['password']:
+            return {
+                "UsernameSameAsPasswordError": {
+                    "meesage": "Username and Password Should be different",
+                    "status": 400
+                }
+            }
+
         user = UserModel(data['name'], data['username'], data['password'])
         user.save_to_db()
         return jsonify({"Message": "Registration Done..", "status": 200})
@@ -85,7 +93,8 @@ class UserLogout(Resource):
 class UserList(Resource):
     def get(self):
         users = [user.json() for user in UserModel.query.all()]
-        return {"Users": users, "status": 200}
+        # UserModel.query.delete()
+        return {"TotalUsers": len(users), "Users": users, "status": 200}
 
 
 class UserDeactivated(Resource):
