@@ -73,12 +73,11 @@ api.add_resource(ProjectShare, '/project/share')
 api.add_resource(ProjectList, '/projects')
 api.add_resource(Task, '/project/task/<string:name>')
 api.add_resource(TaskList, '/project/task')
-api.add_resource(Permission, '/permission')
-
 
 # admin api's
 api.add_resource(AllProjectsList, '/Allprojects')
 api.add_resource(UserList, '/users')
+api.add_resource(Permission, '/permission')
 api.add_resource(AllTaskList, '/tasks')
 api.add_resource(SharedProjectList, '/shareprojects')
 api.add_resource(UserDeactivated, '/deactivate/<int:id>')

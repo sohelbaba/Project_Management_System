@@ -65,20 +65,26 @@ class UserLogin(Resource):
     def get(self):
         data = _user_parse.parse_args()
         user = UserModel.find_by_username(data['username'])
-        if user.status:
-            if user and safe_str_cmp(user.password, data['password']):
-                access_token = create_access_token(identity=user.id)
-                return {
-                    "access_token": access_token,
-                    "status": 200
-                }
+        if user:
+            if user.status:
+                if user and safe_str_cmp(user.password, data['password']):
+                    access_token = create_access_token(identity=user.id)
+                    return {
+                        "access_token": access_token,
+                        "status": 200
+                    }
 
-            return {
-                "UnauthorizedError": {
-                    "message": "Invalid username or password",
-                    "status": 401
-                }}
-        return {"message": "User Deactivated. Can't login Again"}
+                return {
+                    "UnauthorizedError": {
+                        "message": "Invalid username or password",
+                        "status": 401
+                    }}
+            return {"message": "User Deactivated. Can't login Again"}
+        return {
+            "UnauthorizedError": {
+                "message": "Invalid username",
+                "status": 401
+            }}
 
 
 class UserLogout(Resource):
