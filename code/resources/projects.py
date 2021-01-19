@@ -106,9 +106,7 @@ class Project(Resource):
                     return {
                         "UpdatingProjectError": {
                             "message": "You don't have Edit permission",
-                            "status": 401,
-                            "id":  get_jwt_identity(),
-                            "coll": collaborator.permission
+                            "status": 401
                         }}
 
                 return {
